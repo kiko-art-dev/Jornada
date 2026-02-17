@@ -19,7 +19,7 @@ interface ToastState {
 
 let toastCounter = 0
 
-export const useToastStore = create<ToastState>((set, get) => ({
+export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
 
   addToast: (message, opts) => {

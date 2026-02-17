@@ -76,7 +76,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       supabase.from('tasks').select('*').eq('archived', false).order('sort_order'),
       supabase.from('task_tags').select('*'),
       supabase.from('checklist_items').select('*').order('sort_order'),
-      supabase.from('task_dependencies').select('*').then((r) => r).catch(() => ({ data: [] })),
+      supabase.from('task_dependencies').select('*').then((r) => r, () => ({ data: [] as TaskDependency[] })),
     ])
     set({
       tasks: tasks.data ?? [],
@@ -157,7 +157,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const { data, error } = await supabase.from('tasks').insert(newTask).select().single()
     if (error) {
       console.error('createTask error:', error)
-      useToastStore.getState().addToast(`Failed to create task: ${error.message}`, 'error')
+      useToastStore.getState().addToast(`Failed to create task: ${error.message}`, { type: 'warning' })
       return null
     }
     if (data) {
