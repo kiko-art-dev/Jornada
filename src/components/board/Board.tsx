@@ -5,7 +5,6 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
   pointerWithin,
   rectIntersection,
   type CollisionDetection,

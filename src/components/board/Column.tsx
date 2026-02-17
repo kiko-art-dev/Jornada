@@ -3,7 +3,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { Status, Task, StatusCategory } from '../../types'
 import { useProjectStore } from '../../stores/projectStore'
-import { StatusIcon } from '../shared/StatusBadge'
+
 import { Card } from './Card'
 import { AddCard } from './AddCard'
 

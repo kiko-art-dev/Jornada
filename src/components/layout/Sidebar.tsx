@@ -38,15 +38,6 @@ function IconToday({ active }: { active?: boolean }) {
   )
 }
 
-function IconInbox({ active }: { active?: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M2.5 9h3.25L7 10.5h2L10.25 9h3.25" />
-      <path d="M3.6 3.5h8.8L14 9v3.5a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V9l1.6-5.5z" />
-    </svg>
-  )
-}
-
 function IconDashboard({ active }: { active?: boolean }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

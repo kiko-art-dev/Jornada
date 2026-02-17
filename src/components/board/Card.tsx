@@ -155,7 +155,6 @@ export function Card({ task, isDragOverlay }: Props) {
         : 'text-[var(--text-tertiary)]'
     : ''
 
-  const hasDescription = !!task.description
   const hasMeta = checklistStats || isBlocked || task.recurrence_rule ||
     task.priority <= 3 || taskTagList.length > 0 || task.discipline ||
     task.due_date || task.type === 'bug' || taskAttachments.length > 0
