@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import type { Status, Task, StatusCategory } from '../../types'
 import { useProjectStore } from '../../stores/projectStore'
 
@@ -26,14 +26,54 @@ interface Props {
 }
 
 export function Column({ status, tasks, projectId }: Props) {
-  const { setNodeRef, isOver } = useDroppable({
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: `column-${status.id}`,
     data: { type: 'column', statusId: status.id },
   })
 
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: status.id,
+    data: { type: 'status', status },
+  })
+
+  const columnStyle: React.CSSProperties = {
+    transform: transform
+      ? `translate3d(${Math.round(transform.x)}px, ${Math.round(transform.y)}px, 0)`
+      : undefined,
+    transition: transition ?? undefined,
+    opacity: isDragging ? 0.4 : 1,
+  }
+
   const updateStatus = useProjectStore((s) => s.updateStatus)
   const deleteStatus = useProjectStore((s) => s.deleteStatus)
   const statuses = useProjectStore((s) => s.statuses)
+
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      const stored = localStorage.getItem('jornada-collapsed-columns')
+      return stored ? JSON.parse(stored).includes(status.id) : false
+    } catch { return false }
+  })
+
+  const toggleCollapse = () => {
+    setCollapsed((prev: boolean) => {
+      const next = !prev
+      try {
+        const stored = localStorage.getItem('jornada-collapsed-columns')
+        const ids: string[] = stored ? JSON.parse(stored) : []
+        const updated = next ? [...ids, status.id] : ids.filter((id: string) => id !== status.id)
+        localStorage.setItem('jornada-collapsed-columns', JSON.stringify(updated))
+      } catch { /* ignore */ }
+      return next
+    })
+  }
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [isRenaming, setIsRenaming] = useState(false)
@@ -83,11 +123,52 @@ export function Column({ status, tasks, projectId }: Props) {
 
   const taskIds = tasks.map((t) => t.id)
 
-  return (
-    <div className="flex h-full w-[280px] flex-shrink-0 flex-col rounded-xl bg-[var(--color-surface-column)] p-2.5">
-      {/* Column header */}
+  if (collapsed) {
+    return (
       <div
-        className="mb-2.5 flex items-center gap-2.5 rounded-lg bg-[var(--color-surface-card)] px-3 py-2.5 shadow-sm border border-[var(--border-subtle)]"
+        ref={setSortableRef}
+        style={columnStyle}
+        {...attributes}
+        className="flex h-full w-10 flex-shrink-0 flex-col items-center rounded-xl bg-[var(--color-surface-column)] py-2.5 px-1"
+      >
+        <button
+          onClick={toggleCollapse}
+          className="flex flex-col items-center gap-2 rounded-lg bg-[var(--color-surface-card)] px-1.5 py-3 shadow-sm border border-[var(--border-subtle)] hover:border-[var(--border-default)] w-full"
+          style={{ borderTop: `3px solid ${status.color ?? '#a3a3a3'}` }}
+          title={`Expand ${status.name}`}
+        >
+          <div
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: status.color ?? '#a3a3a3' }}
+          />
+          <span
+            className="text-[10px] font-bold tabular-nums"
+            style={{ color: status.color ?? '#a3a3a3' }}
+          >
+            {tasks.length}
+          </span>
+          <span
+            className="text-[10px] font-bold text-[var(--text-tertiary)]"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            {status.name}
+          </span>
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      ref={setSortableRef}
+      style={columnStyle}
+      {...attributes}
+      className="flex h-full w-[280px] flex-shrink-0 flex-col rounded-xl bg-[var(--color-surface-column)] p-2.5"
+    >
+      {/* Column header — drag handle */}
+      <div
+        {...listeners}
+        className="mb-2.5 flex cursor-grab items-center gap-2.5 rounded-lg bg-[var(--color-surface-card)] px-3 py-2.5 shadow-sm border border-[var(--border-subtle)] active:cursor-grabbing"
         style={{ borderLeft: `3px solid ${status.color ?? '#a3a3a3'}` }}
       >
         {isRenaming ? (
@@ -116,6 +197,17 @@ export function Column({ status, tasks, projectId }: Props) {
         <span className="ml-auto rounded-full px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--text-tertiary)]"
           style={{ backgroundColor: `${status.color ?? '#a3a3a3'}15`, color: status.color ?? '#a3a3a3' }}
         >{tasks.length}</span>
+
+        {/* Collapse button */}
+        <button
+          onClick={toggleCollapse}
+          className="flex h-5 w-5 items-center justify-center rounded text-[var(--text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-secondary)]"
+          title="Collapse column"
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </button>
 
         {/* "..." menu */}
         <div className="relative" ref={menuRef}>
@@ -228,7 +320,7 @@ export function Column({ status, tasks, projectId }: Props) {
 
       {/* Cards area */}
       <div
-        ref={setNodeRef}
+        ref={setDroppableRef}
         className={`flex min-h-[120px] flex-1 flex-col gap-2.5 overflow-y-auto rounded-lg transition-colors ${
           isOver ? 'bg-brand-500/[0.06] ring-1 ring-brand-500/20' : ''
         }`}
@@ -244,7 +336,10 @@ export function Column({ status, tasks, projectId }: Props) {
             <span className="text-xs text-[var(--text-muted)]">Drop tasks here</span>
           </div>
         )}
+      </div>
 
+      {/* Add card — pinned at bottom */}
+      <div className="flex-shrink-0 pt-2">
         <AddCard projectId={projectId} statusId={status.id} />
       </div>
     </div>

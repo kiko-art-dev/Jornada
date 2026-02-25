@@ -31,7 +31,7 @@ type ContextTarget =
 // --- SVG Icons ---
 function IconToday({ active }: { active?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="6.25" />
       <path d="M8 4.5V8l2.5 1.5" />
     </svg>
@@ -40,7 +40,7 @@ function IconToday({ active }: { active?: boolean }) {
 
 function IconDashboard({ active }: { active?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="2" width="5" height="5" rx="1" />
       <rect x="9" y="2" width="5" height="3" rx="1" />
       <rect x="2" y="9" width="5" height="3" rx="1" />
@@ -51,16 +51,26 @@ function IconDashboard({ active }: { active?: boolean }) {
 
 function IconSearch({ active }: { active?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="7" cy="7" r="4.25" />
       <path d="m10 10 3.5 3.5" />
     </svg>
   )
 }
 
+function IconBriefcase({ active }: { active?: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="12" height="9" rx="1.5" />
+      <path d="M5.5 5V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V5" />
+      <path d="M2 9h12" />
+    </svg>
+  )
+}
+
 function IconSettings({ active }: { active?: boolean }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke={active ? '#818cf8' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="2" />
       <path d="M8 1.5v1.25M8 13.25v1.25M1.5 8h1.25M13.25 8h1.25M3.4 3.4l.9.9M11.7 11.7l.9.9M3.4 12.6l.9-.9M11.7 4.3l.9-.9" />
     </svg>
@@ -69,11 +79,11 @@ function IconSettings({ active }: { active?: boolean }) {
 
 function IconTheme({ dark }: { dark: boolean }) {
   return dark ? (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M13.5 8.9A5.5 5.5 0 0 1 7.1 2.5 5.5 5.5 0 1 0 13.5 8.9z" />
     </svg>
   ) : (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="8" cy="8" r="3" />
       <path d="M8 1.5v1M8 13.5v1M1.5 8h1M13.5 8h1M3.4 3.4l.7.7M11.9 11.9l.7.7M3.4 12.6l.7-.7M11.9 4.1l.7-.7" />
     </svg>
@@ -228,13 +238,13 @@ export function Sidebar() {
     return (
       <button
         onClick={() => navigate(path)}
-        className={`group/nav mb-0.5 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+        className={`group/nav flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] font-semibold transition-all ${
           active
             ? 'bg-brand-500/10 text-brand-400'
-            : 'text-[var(--text-tertiary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-secondary)]'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-primary)]'
         }`}
       >
-        <span className={`flex-shrink-0 ${active ? 'text-brand-400' : 'text-[var(--text-muted)] group-hover/nav:text-[var(--text-tertiary)]'}`}>
+        <span className={`flex-shrink-0 ${active ? 'text-brand-400' : 'text-[var(--text-tertiary)] group-hover/nav:text-[var(--text-secondary)]'}`}>
           {icon}
         </span>
         <span className="flex-1 text-left">{label}</span>
@@ -291,10 +301,12 @@ export function Sidebar() {
           {navItem('/', 'Today', <IconToday active={isActive('/')} />)}
           {navItem('/dashboard', 'Dashboard', <IconDashboard active={isActive('/dashboard')} />)}
           {navItem('/search', 'Search', <IconSearch active={isActive('/search')} />)}
+          {navItem('/job-hunt', 'Job Hunt', <IconBriefcase active={isActive('/job-hunt')} />)}
         </div>
 
-        {/* Divider */}
-        <div className="mx-3 my-3 border-t border-[var(--border-subtle)]" />
+        {/* Divider + section label */}
+        <div className="mx-3 mt-3 mb-2 border-t border-[var(--border-default)]" />
+        <p className="mb-1.5 px-3 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">Workspaces</p>
 
         {/* Workspace groups */}
         {[...workspaces].sort((a, b) => a.sort_order - b.sort_order).map((workspace) => {
@@ -302,7 +314,7 @@ export function Sidebar() {
           const color = getWsColor(workspace)
 
           return (
-            <div key={workspace.id} className="mb-4">
+            <div key={workspace.id} className="mb-2.5">
               {/* Workspace header */}
               {renamingWorkspace === workspace.id ? (
                 <div className="px-3 py-1">
@@ -320,12 +332,12 @@ export function Sidebar() {
                 </div>
               ) : (
                 <div
-                  className="group mb-1 flex items-center justify-between px-3 py-1.5"
+                  className="group flex items-center justify-between px-3 py-1"
                   onContextMenu={(e) => handleContextMenu(e, { kind: 'workspace', id: workspace.id, x: e.clientX, y: e.clientY })}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-3 w-3 rounded" style={{ backgroundColor: color }} />
-                    <span className="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
+                    <span className="text-[13px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
                       {workspace.name}
                     </span>
                   </div>
@@ -343,7 +355,7 @@ export function Sidebar() {
               )}
 
               {/* Projects — nested with colored rail */}
-              <div className="relative ml-[18px] border-l-2 pl-0" style={{ borderColor: `${color}30` }}>
+              <div className="relative ml-[18px] border-l-2 pl-0" style={{ borderColor: `${color}40` }}>
                 {wsProjects.map((project) => {
                   const active = isActive(`/project/${project.id}`)
                   const count = projectTaskCounts[project.id] ?? 0
@@ -368,17 +380,17 @@ export function Sidebar() {
                             navigate(`/project/${project.id}`)
                           }}
                           onContextMenu={(e) => handleContextMenu(e, { kind: 'project', id: project.id, x: e.clientX, y: e.clientY })}
-                          className={`group/proj flex w-full items-center gap-2 rounded-r-lg py-2 pl-4 pr-3 text-sm font-medium transition-all ${
+                          className={`group/proj flex w-full items-center gap-2 rounded-r-lg py-1.5 pl-4 pr-3 text-[15px] font-medium transition-all ${
                             active
                               ? 'text-[var(--text-primary)]'
-                              : 'text-[var(--text-tertiary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-primary)]'
+                              : 'text-[var(--text-primary)] hover:bg-[var(--color-surface-hover)]'
                           }`}
                           style={active ? { backgroundColor: `${color}15`, color: color } : undefined}
                         >
                           <span className="flex-1 truncate text-left">{project.name}</span>
                           {count > 0 && (
                             <span className={`text-[10px] tabular-nums ${
-                              active ? 'opacity-70' : 'text-[var(--text-muted)] group-hover/proj:text-[var(--text-tertiary)]'
+                              active ? 'opacity-70' : 'text-[var(--text-tertiary)] group-hover/proj:text-[var(--text-secondary)]'
                             }`}>
                               {count}
                             </span>
@@ -430,7 +442,7 @@ export function Sidebar() {
         ) : (
           <button
             onClick={() => { setAddingWorkspace(true); setNewWorkspaceName('') }}
-            className="mb-2 flex w-full items-center gap-1.5 rounded-md px-3 py-1.5 text-xs text-[var(--text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-tertiary)]"
+            className="mb-1 flex w-full items-center gap-1.5 rounded-md px-3 py-1 text-[13px] text-[var(--text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-tertiary)]"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
             <span>Add Workspace</span>
@@ -575,23 +587,23 @@ export function Sidebar() {
       )}
 
       {/* Footer */}
-      <div className="border-t border-[var(--border-subtle)] px-2 py-3">
+      <div className="border-t border-[var(--border-default)] px-2 py-2">
         <button
           onClick={toggleTheme}
-          className="group/nav flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[var(--text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-secondary)]"
+          className="group/nav flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] font-semibold text-[var(--text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-primary)]"
         >
-          <span className="text-[var(--text-muted)] group-hover/nav:text-[var(--text-tertiary)]"><IconTheme dark={theme === 'dark'} /></span>
+          <span className="text-[var(--text-tertiary)] group-hover/nav:text-[var(--text-secondary)]"><IconTheme dark={theme === 'dark'} /></span>
           <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
         </button>
         <button
           onClick={() => navigate('/settings')}
-          className={`group/nav flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+          className={`group/nav flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[15px] font-semibold transition-all ${
             isActive('/settings')
               ? 'bg-brand-500/10 text-brand-400'
-              : 'text-[var(--text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-secondary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--text-primary)]'
           }`}
         >
-          <span className={isActive('/settings') ? 'text-brand-400' : 'text-[var(--text-muted)] group-hover/nav:text-[var(--text-tertiary)]'}>
+          <span className={isActive('/settings') ? 'text-brand-400' : 'text-[var(--text-tertiary)] group-hover/nav:text-[var(--text-secondary)]'}>
             <IconSettings active={isActive('/settings')} />
           </span>
           <span>Settings</span>

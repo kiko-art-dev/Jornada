@@ -141,8 +141,51 @@ export interface TaskAttachment {
   task_id: string
   file_name: string
   file_url: string
+  file_path?: string | null
   file_type: string
   file_size: number
+  created_at: string
+}
+
+// ============================================================
+// Job Hunt Types
+// ============================================================
+
+export type JobStage = 'studios' | 'applied' | 'interviewing' | 'offer' | 'closed'
+
+export type InterestLevel = 'high' | 'medium' | 'low'
+
+export type ContactMethod = 'linkedin' | 'email' | 'website'
+
+export type JobMarket = 'poland' | 'international'
+
+export interface JobApplication {
+  id: string
+  studio_name: string
+  locations: string | null
+  notable_games: string | null
+  interest: InterestLevel
+  stage: JobStage
+  market: JobMarket
+  contact_method: ContactMethod | null
+  contact_person: string | null
+  next_action_date: string | null
+  job_url: string | null
+  position: string | null
+  notes: string | null
+  sort_order: number
+  pinned: boolean
+  archived: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface JobTimelineEntry {
+  id: string
+  application_id: string
+  from_stage: string | null
+  to_stage: string
+  note: string | null
   created_at: string
 }
 
@@ -166,7 +209,7 @@ export interface TaskWithRelations extends Task {
 
 // Export/Import format
 export interface JornadaExport {
-  version: '1.0'
+  version: '1.0' | '1.1'
   exported_at: string
   data: {
     workspaces: Workspace[]
@@ -178,5 +221,8 @@ export interface JornadaExport {
     task_tags: TaskTag[]
     checklist_items: ChecklistItem[]
     task_notes: TaskNote[]
+    task_activity?: TaskActivity[]
+    task_dependencies?: TaskDependency[]
+    task_attachments?: TaskAttachment[]
   }
 }

@@ -12,9 +12,10 @@ import {
   type DragEndEvent,
   type DragOverEvent,
 } from '@dnd-kit/core'
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 import { useProjectStore } from '../../stores/projectStore'
 import { useTaskStore } from '../../stores/taskStore'
-import type { Task } from '../../types'
+import type { Task, Status } from '../../types'
 import { Column } from './Column'
 import { Card } from './Card'
 import { SkeletonCard } from '../shared/Skeleton'
@@ -27,11 +28,13 @@ interface Props {
 export function Board({ projectId, taskFilter }: Props) {
   const allStatuses = useProjectStore((s) => s.statuses)
   const createStatus = useProjectStore((s) => s.createStatus)
+  const reorderStatuses = useProjectStore((s) => s.reorderStatuses)
   const allTasks = useTaskStore((s) => s.tasks)
   const loading = useTaskStore((s) => s.loading)
   const updateTask = useTaskStore((s) => s.updateTask)
 
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [activeColumn, setActiveColumn] = useState<Status | null>(null)
   const [addingStatus, setAddingStatus] = useState(false)
   const [newStatusName, setNewStatusName] = useState('')
   const newStatusRef = useRef<HTMLInputElement>(null)
@@ -61,6 +64,8 @@ export function Board({ projectId, taskFilter }: Props) {
     [allStatuses, projectId]
   )
 
+  const statusIds = useMemo(() => statuses.map((s) => s.id), [statuses])
+
   const projectTasks = useMemo(
     () => {
       const base = allTasks.filter((t) => t.project_id === projectId)
@@ -89,11 +94,25 @@ export function Board({ projectId, taskFilter }: Props) {
   )
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const task = projectTasks.find((t) => t.id === event.active.id)
+    const { active } = event
+    const activeId = active.id as string
+
+    // Check if dragging a column
+    const status = statuses.find((s) => s.id === activeId)
+    if (status) {
+      setActiveColumn(status)
+      return
+    }
+
+    // Otherwise dragging a task
+    const task = projectTasks.find((t) => t.id === activeId)
     if (task) setActiveTask(task)
-  }, [projectTasks])
+  }, [projectTasks, statuses])
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
+    // Only handle task drags for cross-column moves
+    if (activeColumn) return
+
     const { active, over } = event
     if (!over) return
 
@@ -115,12 +134,29 @@ export function Board({ projectId, taskFilter }: Props) {
     if (draggedTask && draggedTask.status_id !== targetStatusId) {
       updateTask(activeId, { status_id: targetStatusId })
     }
-  }, [projectTasks, updateTask])
+  }, [projectTasks, updateTask, activeColumn])
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setActiveTask(null)
-
     const { active, over } = event
+
+    // Handle column reorder
+    if (activeColumn) {
+      setActiveColumn(null)
+      if (!over || active.id === over.id) return
+
+      const oldIndex = statuses.findIndex((s) => s.id === active.id)
+      const newIndex = statuses.findIndex((s) => s.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const reordered = [...statuses]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+      reorderStatuses(projectId, reordered.map((s) => s.id))
+      return
+    }
+
+    // Handle task reorder
+    setActiveTask(null)
     if (!over) return
 
     const activeId = active.id as string
@@ -135,7 +171,7 @@ export function Board({ projectId, taskFilter }: Props) {
         updateTask(activeId, { sort_order: overTask.sort_order })
       }
     }
-  }, [projectTasks, updateTask])
+  }, [projectTasks, updateTask, activeColumn, statuses, reorderStatuses, projectId])
 
   if (loading) {
     return (
@@ -169,14 +205,16 @@ export function Board({ projectId, taskFilter }: Props) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-full gap-4 overflow-x-auto p-6">
-        {statuses.map((status) => (
-          <Column
-            key={status.id}
-            status={status}
-            tasks={getTasksByStatus(status.id)}
-            projectId={projectId}
-          />
-        ))}
+        <SortableContext items={statusIds} strategy={horizontalListSortingStrategy}>
+          {statuses.map((status) => (
+            <Column
+              key={status.id}
+              status={status}
+              tasks={getTasksByStatus(status.id)}
+              projectId={projectId}
+            />
+          ))}
+        </SortableContext>
 
         {/* Ghost column — add new status */}
         <div className="flex h-full w-72 flex-shrink-0 flex-col">
@@ -211,6 +249,20 @@ export function Board({ projectId, taskFilter }: Props) {
 
       <DragOverlay dropAnimation={null}>
         {activeTask ? <Card task={activeTask} isDragOverlay /> : null}
+        {activeColumn ? (
+          <div className="w-[280px] rounded-xl border border-brand-500/40 bg-[var(--color-surface-column)] p-2.5 shadow-xl shadow-black/15 opacity-90">
+            <div
+              className="flex items-center gap-2.5 rounded-lg bg-[var(--color-surface-card)] px-3 py-2.5 shadow-sm border border-[var(--border-subtle)]"
+              style={{ borderLeft: `3px solid ${activeColumn.color ?? '#a3a3a3'}` }}
+            >
+              <div className="h-3 w-3 flex-shrink-0 rounded-full" style={{ backgroundColor: activeColumn.color ?? '#a3a3a3' }} />
+              <span className="text-sm font-bold text-[var(--text-primary)]">{activeColumn.name}</span>
+              <span className="ml-auto text-xs text-[var(--text-muted)]">
+                {getTasksByStatus(activeColumn.id).length} tasks
+              </span>
+            </div>
+          </div>
+        ) : null}
       </DragOverlay>
     </DndContext>
   )

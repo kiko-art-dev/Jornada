@@ -48,7 +48,7 @@ interface TaskState {
 
   // Attachments
   uploadAttachment: (taskId: string, file: File) => Promise<void>
-  deleteAttachment: (id: string, fileUrl: string) => Promise<void>
+  deleteAttachment: (id: string, storageRef: string) => Promise<void>
   getTaskAttachments: (taskId: string) => TaskAttachment[]
 
   // Helpers
@@ -58,6 +58,69 @@ interface TaskState {
   getTaskChecklist: (taskId: string) => ChecklistItem[]
   getTaskNotes: (taskId: string) => TaskNote[]
   getTaskTagIds: (taskId: string) => string[]
+}
+
+function decodePath(value: string): string {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+function normalizeAttachmentPath(value: string | null | undefined): string | null {
+  if (!value) return null
+  if (!value.includes('://')) return value.replace(/^\/+/, '')
+
+  try {
+    const url = new URL(value)
+    const marker = '/task-attachments/'
+    const markerIndex = url.pathname.indexOf(marker)
+    if (markerIndex >= 0) {
+      return decodePath(url.pathname.slice(markerIndex + marker.length))
+    }
+  } catch {
+    // Fall through to regex fallback
+  }
+
+  const match = value.match(/task-attachments\/([^?]+)/)
+  return match ? decodePath(match[1]) : null
+}
+
+async function withSignedAttachmentUrls(attachments: TaskAttachment[]): Promise<TaskAttachment[]> {
+  if (attachments.length === 0) return attachments
+
+  const uniquePaths = Array.from(
+    new Set(
+      attachments
+        .map((attachment) => normalizeAttachmentPath(attachment.file_path ?? attachment.file_url))
+        .filter((path): path is string => Boolean(path))
+    )
+  )
+
+  if (uniquePaths.length === 0) return attachments
+
+  const { data, error } = await supabase.storage
+    .from('task-attachments')
+    .createSignedUrls(uniquePaths, 60 * 60)
+
+  if (error || !data) return attachments
+
+  const signedUrlByPath = new Map<string, string>()
+  data.forEach((item, idx) => {
+    if (item.signedUrl) signedUrlByPath.set(uniquePaths[idx], item.signedUrl)
+  })
+
+  return attachments.map((attachment) => {
+    const path = normalizeAttachmentPath(attachment.file_path ?? attachment.file_url)
+    return {
+      ...attachment,
+      file_path: path ?? attachment.file_path ?? null,
+      file_url: path && signedUrlByPath.has(path)
+        ? signedUrlByPath.get(path)!
+        : attachment.file_url,
+    }
+  })
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -93,6 +156,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       supabase.from('task_notes').select('*').eq('task_id', taskId).order('created_at', { ascending: false }),
       supabase.from('task_attachments').select('*').eq('task_id', taskId).order('created_at', { ascending: false }),
     ])
+    const signedAttachments = await withSignedAttachmentUrls(attachments.data ?? [])
     set((s) => ({
       checklistItems: [
         ...s.checklistItems.filter((c) => c.task_id !== taskId),
@@ -104,7 +168,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       ],
       taskAttachments: [
         ...s.taskAttachments.filter((a) => a.task_id !== taskId),
-        ...(attachments.data ?? []),
+        ...signedAttachments,
       ],
     }))
   },
@@ -345,39 +409,60 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       .upload(path, file)
 
     if (uploadError) {
-      useToastStore.getState().addToast(`Upload failed: ${uploadError.message}`)
+      const isMissingBucket = /bucket not found/i.test(uploadError.message)
+      const message = isMissingBucket
+        ? 'Upload failed: bucket "task-attachments" is missing. Apply migration 005 in Supabase SQL Editor.'
+        : `Upload failed: ${uploadError.message}`
+      useToastStore.getState().addToast(message)
       return
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('task-attachments')
-      .getPublicUrl(path)
+      .createSignedUrl(path, 60 * 60)
 
-    const { data } = await supabase
+    if (signedError || !signedData?.signedUrl) {
+      await supabase.storage.from('task-attachments').remove([path])
+      useToastStore.getState().addToast('Upload failed: could not create signed URL.')
+      return
+    }
+
+    const { data, error: insertError } = await supabase
       .from('task_attachments')
       .insert({
         task_id: taskId,
         file_name: file.name,
-        file_url: urlData.publicUrl,
+        file_url: signedData.signedUrl,
         file_type: file.type,
         file_size: file.size,
       })
       .select()
       .single()
 
+    if (insertError) {
+      await supabase.storage.from('task-attachments').remove([path])
+      useToastStore.getState().addToast(`Upload failed: ${insertError.message}`)
+      return
+    }
+
     if (data) {
-      set((s) => ({ taskAttachments: [...s.taskAttachments, data] }))
+      const normalizedPath = normalizeAttachmentPath(data.file_path ?? data.file_url) ?? path
+      set((s) => ({
+        taskAttachments: [
+          ...s.taskAttachments,
+          { ...data, file_path: normalizedPath, file_url: signedData.signedUrl },
+        ],
+      }))
     }
   },
 
-  deleteAttachment: async (id, fileUrl) => {
+  deleteAttachment: async (id, storageRef) => {
     set((s) => ({ taskAttachments: s.taskAttachments.filter((a) => a.id !== id) }))
     await supabase.from('task_attachments').delete().eq('id', id)
 
-    // Extract storage path from URL
-    const match = fileUrl.match(/task-attachments\/(.+)$/)
-    if (match) {
-      await supabase.storage.from('task-attachments').remove([match[1]])
+    const path = normalizeAttachmentPath(storageRef)
+    if (path) {
+      await supabase.storage.from('task-attachments').remove([path])
     }
   },
 

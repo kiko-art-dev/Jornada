@@ -1,5 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
+import { motion } from 'framer-motion'
 import type { Task } from '../../types'
 import { PriorityBadge } from '../shared/PriorityBadge'
 import { TagBadge } from '../shared/TagBadge'
@@ -19,6 +20,7 @@ export function Card({ task, isDragOverlay }: Props) {
   const selectedTaskIds = useUIStore((s) => s.selectedTaskIds)
   const toggleTaskSelected = useUIStore((s) => s.toggleTaskSelected)
   const updateTask = useTaskStore((s) => s.updateTask)
+  const uploadAttachment = useTaskStore((s) => s.uploadAttachment)
   const allTaskTags = useTaskStore((s) => s.taskTags)
   const tags = useProjectStore((s) => s.tags)
   const statuses = useProjectStore((s) => s.statuses)
@@ -87,6 +89,20 @@ export function Card({ task, isDragOverlay }: Props) {
     if (e.key === 'Enter') {
       e.preventDefault()
       handleSave()
+    }
+  }
+
+  const handlePasteAttachment = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (const item of items) {
+      if (!item.type.startsWith('image/')) continue
+      const file = item.getAsFile()
+      if (!file) return
+      e.preventDefault()
+      await uploadAttachment(task.id, file)
+      return
     }
   }
 
@@ -161,9 +177,13 @@ export function Card({ task, isDragOverlay }: Props) {
 
   if (isDragOverlay) {
     return (
-      <div className="w-[268px] cursor-grabbing rounded-xl border border-brand-500/40 bg-[var(--color-surface-card)] p-4 shadow-xl shadow-black/15">
+      <motion.div
+        initial={{ scale: 1, rotate: 0 }}
+        animate={{ scale: 1.04, rotate: 1 }}
+        className="w-[268px] cursor-grabbing rounded-xl border border-brand-500/40 bg-[var(--color-surface-card)] p-4 shadow-xl shadow-black/25"
+      >
         <p className="text-sm font-semibold text-[var(--text-primary)] leading-snug">{task.title}</p>
-      </div>
+      </motion.div>
     )
   }
 
@@ -173,6 +193,7 @@ export function Card({ task, isDragOverlay }: Props) {
       style={style}
       {...attributes}
       {...(isEditing ? {} : listeners)}
+      onPaste={handlePasteAttachment}
       onClick={() => {
         if (!isDragging && !isEditing) setIsEditing(true)
       }}

@@ -23,6 +23,14 @@ export function useHotkeys() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept when typing in inputs
       if (isInputFocused()) return
+
+      // Ctrl+N — open quick capture
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault()
+        setQuickCaptureOpen(true)
+        return
+      }
+
       // Don't intercept when modifiers are held (except for Ctrl+K handled elsewhere)
       if (e.metaKey || e.ctrlKey || e.altKey) return
 

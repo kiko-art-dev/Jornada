@@ -25,7 +25,7 @@ export function AttachmentGallery({ attachments }: Props) {
               onClick={() => setLightboxUrl(att.file_url)}
             />
             <button
-              onClick={() => deleteAttachment(att.id, att.file_url)}
+              onClick={() => deleteAttachment(att.id, att.file_path ?? att.file_url)}
               className="absolute top-1 right-1 hidden rounded bg-black/60 p-0.5 text-[var(--text-muted)] hover:text-red-400 group-hover:block"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>

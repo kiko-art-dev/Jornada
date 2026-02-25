@@ -12,6 +12,8 @@ import { ProjectPage } from './pages/ProjectPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { SearchPage } from './pages/SearchPage'
+import { JobHuntPage } from './pages/JobHuntPage'
+import { useJobHuntStore } from './stores/jobHuntStore'
 
 // Error boundary to catch rendering errors
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -49,6 +51,7 @@ function AppContent() {
   const { user, loading: authLoading } = useAuth()
   const fetchAll = useProjectStore((s) => s.fetchAll)
   const fetchTasks = useTaskStore((s) => s.fetchTasks)
+  const fetchApplications = useJobHuntStore((s) => s.fetchApplications)
   const theme = useUIStore((s) => s.theme)
 
   useEffect(() => {
@@ -59,8 +62,9 @@ function AppContent() {
     if (user) {
       fetchAll()
       fetchTasks()
+      fetchApplications()
     }
-  }, [user, fetchAll, fetchTasks])
+  }, [user, fetchAll, fetchTasks, fetchApplications])
 
   if (authLoading) {
     return (
@@ -83,6 +87,7 @@ function AppContent() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/job-hunt" element={<JobHuntPage />} />
       </Route>
     </Routes>
   )

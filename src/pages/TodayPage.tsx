@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { format, isPast, isToday as isDateToday } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 import { useTaskStore } from '../stores/taskStore'
 import { useProjectStore } from '../stores/projectStore'
 import { useUIStore } from '../stores/uiStore'
+import { useJobHuntStore } from '../stores/jobHuntStore'
 import { PriorityBadge } from '../components/shared/PriorityBadge'
 import { SkeletonLine } from '../components/shared/Skeleton'
 import { SECTION_COLORS } from '../lib/theme'
-import type { Task } from '../types'
+import { JOB_STAGE_MAP } from '../lib/jobHunt'
+import type { Task, JobStage } from '../types'
 
 interface TodaySection {
   title: string
@@ -76,6 +79,20 @@ export function TodayPage() {
     return result
   }, [allTasks, allStatuses, taskTags, tags])
 
+  // Job hunt follow-ups
+  const applications = useJobHuntStore((s) => s.applications)
+  const navigate = useNavigate()
+
+  const jobFollowUps = useMemo(() => {
+    const overdue = applications.filter((a) =>
+      a.next_action_date && isPast(new Date(a.next_action_date)) && !isDateToday(new Date(a.next_action_date))
+    )
+    const dueToday = applications.filter((a) =>
+      a.next_action_date && isDateToday(new Date(a.next_action_date))
+    )
+    return { overdue, dueToday, total: overdue.length + dueToday.length }
+  }, [applications])
+
   const totalTasks = sections.reduce((sum, s) => sum + s.tasks.length, 0)
 
   const getProjectName = (projectId: string | null) =>
@@ -115,6 +132,57 @@ export function TodayPage() {
       </p>
 
       <div className="mt-8 space-y-8">
+        {/* Job hunt follow-ups */}
+        {jobFollowUps.total > 0 && (
+          <div>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="h-4 w-0.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="12" height="9" rx="1.5" />
+                <path d="M5.5 5V3.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1V5" />
+                <path d="M2 9h12" />
+              </svg>
+              <span className="text-xs font-semibold uppercase tracking-wide text-orange-500">
+                Job Follow-ups
+              </span>
+              <span className="rounded-full bg-[var(--color-surface-hover)] px-1.5 py-0.5 text-[11px] text-[var(--text-tertiary)]">
+                {jobFollowUps.total}
+              </span>
+            </div>
+            <div className="space-y-1">
+              {[...jobFollowUps.overdue, ...jobFollowUps.dueToday].map((app) => {
+                const isOverdue = app.next_action_date && isPast(new Date(app.next_action_date)) && !isDateToday(new Date(app.next_action_date))
+                const stage = JOB_STAGE_MAP[app.stage as JobStage]
+                return (
+                  <div
+                    key={app.id}
+                    onClick={() => navigate('/job-hunt')}
+                    className="group flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--color-surface-card)] shadow-sm hover:border-[var(--border-default)] hover:shadow-md"
+                  >
+                    <div className="h-full w-0.5 self-stretch" style={{ backgroundColor: isOverdue ? '#ef4444' : '#f59e0b' }} />
+                    <div className="flex flex-1 items-center gap-3 px-3.5 py-3">
+                      <span
+                        className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{ backgroundColor: `${stage?.color ?? '#6b7280'}20`, color: stage?.color ?? '#6b7280' }}
+                      >
+                        {stage?.label ?? app.stage}
+                      </span>
+                      <span className="flex-1 truncate text-sm text-[var(--text-primary)]">{app.studio_name}</span>
+                      {app.position && (
+                        <span className="text-[12px] text-[var(--text-tertiary)]">{app.position}</span>
+                      )}
+                      <span className={`text-[12px] ${isOverdue ? 'text-red-400' : 'text-orange-400'}`}>
+                        {app.next_action_date && format(new Date(app.next_action_date), 'MMM d')}
+                        {isOverdue && ' (overdue)'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {sections.map((section) => (
           <div key={section.title}>
             <div className="mb-3 flex items-center gap-2">
