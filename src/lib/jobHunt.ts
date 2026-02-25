@@ -26,12 +26,19 @@ export const CONTACT_METHODS = [
 
 // --- Daily Routine ---
 
+export interface RoutineSubstep {
+  key: string
+  label: string
+  url: string
+}
+
 export interface RoutineStep {
   key: string
   label: string
   timeEstimate: string
   timeMinutes: number
   links?: { label: string; url: string }[]
+  substeps?: RoutineSubstep[]
 }
 
 export const DAILY_ROUTINE_STEPS: RoutineStep[] = [
@@ -54,28 +61,19 @@ export const DAILY_ROUTINE_STEPS: RoutineStep[] = [
     label: 'Scan job boards',
     timeEstimate: '10 min',
     timeMinutes: 10,
-    links: [
-      { label: 'ArtStation Jobs', url: 'https://www.artstation.com/jobs' },
-      { label: 'Hitmarker', url: 'https://hitmarker.net/' },
-      { label: 'InGame Job', url: 'https://ingamejob.com/en' },
-      { label: 'GameJobs.eu', url: 'https://gamejobs.eu/' },
-      { label: 'Games Jobs Direct', url: 'https://www.gamesjobsdirect.com/' },
-      { label: 'Games-Career', url: 'https://www.games-career.com/' },
-      { label: 'Work With Indies', url: 'https://www.workwithindies.com/' },
-      { label: 'Remote Rocketship', url: 'https://www.remoterocketship.com/country/europe/jobs/art-director/' },
-      { label: 'Skillshot', url: 'https://www.skillshot.pl/' },
-      { label: 'GameJobs.co', url: 'https://gamejobs.co/' },
-      { label: 'Remote Game Jobs', url: 'https://remotegamejobs.com/' },
-      { label: 'LinkedIn Jobs', url: 'https://www.linkedin.com/jobs/' },
-    ],
-  },
-  {
-    key: 'linkedin_alerts',
-    label: 'Check LinkedIn job alerts',
-    timeEstimate: '5 min',
-    timeMinutes: 5,
-    links: [
-      { label: 'LinkedIn Jobs', url: 'https://www.linkedin.com/jobs/' },
+    substeps: [
+      { key: 'board_artstation',        label: 'ArtStation Jobs',    url: 'https://www.artstation.com/jobs' },
+      { key: 'board_hitmarker',         label: 'Hitmarker',          url: 'https://hitmarker.net/' },
+      { key: 'board_ingamejob',         label: 'InGame Job',         url: 'https://ingamejob.com/en' },
+      { key: 'board_gamejobs_eu',       label: 'GameJobs.eu',        url: 'https://gamejobs.eu/' },
+      { key: 'board_gamesjobsdirect',   label: 'Games Jobs Direct',  url: 'https://www.gamesjobsdirect.com/' },
+      { key: 'board_gamescareer',       label: 'Games-Career',       url: 'https://www.games-career.com/' },
+      { key: 'board_workwithindies',    label: 'Work With Indies',   url: 'https://www.workwithindies.com/' },
+      { key: 'board_remoterocketship',  label: 'Remote Rocketship',  url: 'https://www.remoterocketship.com/country/europe/jobs/art-director/' },
+      { key: 'board_skillshot',         label: 'Skillshot',          url: 'https://www.skillshot.pl/' },
+      { key: 'board_gamejobs_co',       label: 'GameJobs.co',        url: 'https://gamejobs.co/' },
+      { key: 'board_remotegamejobs',    label: 'Remote Game Jobs',   url: 'https://remotegamejobs.com/' },
+      { key: 'board_linkedin',          label: 'LinkedIn Jobs',      url: 'https://www.linkedin.com/jobs/' },
     ],
   },
   {
@@ -97,3 +95,16 @@ export const DAILY_ROUTINE_STEPS: RoutineStep[] = [
     timeMinutes: 0,
   },
 ]
+
+/** All checkable keys (top-level steps without substeps + all substep keys) */
+export function getAllRoutineKeys(): string[] {
+  const keys: string[] = []
+  for (const step of DAILY_ROUTINE_STEPS) {
+    if (step.substeps) {
+      for (const sub of step.substeps) keys.push(sub.key)
+    } else {
+      keys.push(step.key)
+    }
+  }
+  return keys
+}

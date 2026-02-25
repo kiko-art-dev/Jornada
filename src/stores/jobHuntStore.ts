@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { useToastStore } from './toastStore'
-import { DAILY_ROUTINE_STEPS } from '../lib/jobHunt'
+import { getAllRoutineKeys } from '../lib/jobHunt'
 import type { JobApplication, JobTimelineEntry, JobStage } from '../types'
 
 interface RoutineDay {
@@ -242,7 +242,8 @@ export const useJobHuntStore = create<JobHuntState>((set, get) => ({
       .gte('log_date', fromDate)
       .eq('completed', true)
 
-    const total = DAILY_ROUTINE_STEPS.length
+    const allKeys = getAllRoutineKeys()
+    const total = allKeys.length
     const dayCounts: Record<string, number> = {}
     if (histData) {
       for (const row of histData) {
@@ -278,7 +279,7 @@ export const useJobHuntStore = create<JobHuntState>((set, get) => ({
 
     // Check if all done → toast
     const logs = get().routineLogs
-    const allDone = DAILY_ROUTINE_STEPS.every((s) => logs[s.key])
+    const allDone = getAllRoutineKeys().every((k) => logs[k])
     if (allDone) {
       useToastStore.getState().addToast('Daily routine complete! Nice work.', { type: 'success' })
     }

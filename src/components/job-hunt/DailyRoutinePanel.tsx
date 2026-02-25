@@ -1,16 +1,36 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useJobHuntStore } from '../../stores/jobHuntStore'
-import { DAILY_ROUTINE_STEPS } from '../../lib/jobHunt'
+import { DAILY_ROUTINE_STEPS, getAllRoutineKeys } from '../../lib/jobHunt'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-function dotColor(completed: number, total: number, isToday: boolean): string {
-  if (completed === 0) return isToday ? '#1a1d2b' : '#1a1d2b'
+function dotColor(completed: number, total: number): string {
+  if (completed === 0) return '#1a1d2b'
   const pct = completed / total
   if (pct >= 1) return '#22c55e'
   if (pct >= 0.5) return '#3b82f6'
   return '#f59e0b'
+}
+
+function Checkbox({ checked, size = 18 }: { checked: boolean; size?: number }) {
+  return (
+    <motion.div
+      animate={checked ? { scale: [1, 1.25, 1] } : { scale: 1 }}
+      transition={{ duration: 0.25 }}
+    >
+      {checked ? (
+        <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+          <rect x="1" y="1" width="16" height="16" rx="4" fill="#8b5cf6" />
+          <path d="M5.5 9l2.5 2.5 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg width={size} height={size} viewBox="0 0 18 18" fill="none">
+          <rect x="1" y="1" width="16" height="16" rx="4" stroke="var(--text-muted)" strokeWidth="1.5" />
+        </svg>
+      )}
+    </motion.div>
+  )
 }
 
 export function DailyRoutinePanel() {
@@ -19,11 +39,17 @@ export function DailyRoutinePanel() {
   const toggleStep = useJobHuntStore((s) => s.toggleRoutineStep)
   const [open, setOpen] = useState(false)
 
-  const doneCount = DAILY_ROUTINE_STEPS.filter((s) => routineLogs[s.key]).length
-  const totalCount = DAILY_ROUTINE_STEPS.length
+  const allKeys = getAllRoutineKeys()
+  const doneCount = allKeys.filter((k) => routineLogs[k]).length
+  const totalCount = allKeys.length
 
   const timeLeft = DAILY_ROUTINE_STEPS
-    .filter((s) => !routineLogs[s.key])
+    .filter((s) => {
+      if (s.substeps) {
+        return s.substeps.some((sub) => !routineLogs[sub.key])
+      }
+      return !routineLogs[s.key]
+    })
     .reduce((sum, s) => sum + s.timeMinutes, 0)
 
   // Streak: consecutive days with 100% (not counting today)
@@ -32,7 +58,6 @@ export function DailyRoutinePanel() {
     if (routineHistory[i].completed >= routineHistory[i].total) streak++
     else break
   }
-  // Include today if 100%
   if (doneCount === totalCount) streak++
 
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -87,7 +112,7 @@ export function DailyRoutinePanel() {
                       </span>
                       <motion.div
                         className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: dotColor(day.completed, day.total, isToday) }}
+                        style={{ backgroundColor: dotColor(day.completed, day.total) }}
                         initial={false}
                         animate={{ scale: isToday ? [1, 1.15, 1] : 1 }}
                         transition={{ duration: 0.4 }}
@@ -122,35 +147,83 @@ export function DailyRoutinePanel() {
               {/* Checklist */}
               <div className="space-y-0.5">
                 {DAILY_ROUTINE_STEPS.map((step) => {
+                  // Step with substeps — render as a group
+                  if (step.substeps) {
+                    const subDone = step.substeps.filter((sub) => routineLogs[sub.key]).length
+                    const subTotal = step.substeps.length
+                    const allSubDone = subDone === subTotal
+                    return (
+                      <div key={step.key}>
+                        {/* Group header */}
+                        <div className="flex items-center gap-3 rounded-lg px-2 py-2.5">
+                          <div className="mt-0.5 flex-shrink-0 w-[18px]" />
+                          <span className={`text-[13px] font-semibold leading-tight ${
+                            allSubDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'
+                          }`}>
+                            {step.label}
+                          </span>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
+                            allSubDone
+                              ? 'bg-green-500/15 text-green-400'
+                              : subDone > 0
+                                ? 'bg-brand-500/15 text-brand-400'
+                                : 'bg-[var(--color-surface-hover)] text-[var(--text-muted)]'
+                          }`}>
+                            {subDone}/{subTotal}
+                          </span>
+                          <span className="flex-shrink-0 text-[11px] tabular-nums text-[var(--text-muted)] ml-auto">
+                            {step.timeEstimate}
+                          </span>
+                        </div>
+
+                        {/* Sub-items */}
+                        <div className="ml-8 space-y-0">
+                          {step.substeps.map((sub) => {
+                            const checked = routineLogs[sub.key] || false
+                            return (
+                              <div
+                                key={sub.key}
+                                className="group flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-[var(--color-surface-hover)]"
+                              >
+                                <button
+                                  onClick={() => toggleStep(sub.key)}
+                                  className="flex-shrink-0"
+                                >
+                                  <Checkbox checked={checked} size={15} />
+                                </button>
+                                <a
+                                  href={sub.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`text-[12px] transition-all hover:underline ${
+                                    checked
+                                      ? 'line-through text-[var(--text-muted)]'
+                                      : 'text-brand-400 hover:text-brand-300'
+                                  }`}
+                                >
+                                  {sub.label}
+                                </a>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  // Regular step (no substeps)
                   const checked = routineLogs[step.key] || false
                   return (
                     <div
                       key={step.key}
                       className="group flex items-start gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-[var(--color-surface-hover)]"
                     >
-                      {/* Checkbox */}
                       <button
                         onClick={() => toggleStep(step.key)}
                         className="mt-0.5 flex-shrink-0"
                       >
-                        <motion.div
-                          animate={checked ? { scale: [1, 1.25, 1] } : { scale: 1 }}
-                          transition={{ duration: 0.25 }}
-                        >
-                          {checked ? (
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                              <rect x="1" y="1" width="16" height="16" rx="4" fill="#8b5cf6" />
-                              <path d="M5.5 9l2.5 2.5 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          ) : (
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                              <rect x="1" y="1" width="16" height="16" rx="4" stroke="var(--text-muted)" strokeWidth="1.5" />
-                            </svg>
-                          )}
-                        </motion.div>
+                        <Checkbox checked={checked} />
                       </button>
-
-                      {/* Label + links */}
                       <div className="flex-1 min-w-0">
                         <span className={`text-[13px] leading-tight transition-all ${
                           checked
@@ -175,8 +248,6 @@ export function DailyRoutinePanel() {
                           </div>
                         )}
                       </div>
-
-                      {/* Time estimate */}
                       <span className="flex-shrink-0 text-[11px] tabular-nums text-[var(--text-muted)]">
                         {step.timeEstimate}
                       </span>
