@@ -23,3 +23,69 @@ export const CONTACT_METHODS = [
   { value: 'email' as const,    label: 'Email' },
   { value: 'website' as const,  label: 'Website' },
 ]
+
+// --- Daily Routine ---
+
+export interface RoutineStep {
+  key: string
+  label: string
+  timeEstimate: string
+  timeMinutes: number
+  links?: { label: string; url: string }[]
+}
+
+export const DAILY_ROUTINE_STEPS: RoutineStep[] = [
+  {
+    key: 'check_warsaw',
+    label: 'Check Warsaw studio career pages',
+    timeEstimate: '5 min',
+    timeMinutes: 5,
+    links: [
+      { label: 'CD Projekt RED', url: 'https://www.cdprojektred.com/en/jobs' },
+      { label: 'Techland', url: 'https://techland.net/company/careers' },
+      { label: 'People Can Fly', url: 'https://peoplecanfly.com/careers/' },
+      { label: 'Larian Warsaw', url: 'https://larian.com/careers/location/warsaw' },
+      { label: '11 bit', url: 'https://www.11bitstudios.com/careers/' },
+      { label: 'Flying Wild Hog', url: 'https://flyingwildhog.com/careers/' },
+    ],
+  },
+  {
+    key: 'scan_boards',
+    label: 'Scan job boards',
+    timeEstimate: '10 min',
+    timeMinutes: 10,
+    links: [
+      { label: 'ArtStation Jobs', url: 'https://www.artstation.com/jobs' },
+      { label: 'Hitmarker', url: 'https://hitmarker.net/' },
+      { label: 'InGame Job', url: 'https://ingamejob.com/en' },
+      { label: 'GameJobs.eu', url: 'https://gamejobs.eu/' },
+    ],
+  },
+  {
+    key: 'linkedin_alerts',
+    label: 'Check LinkedIn job alerts',
+    timeEstimate: '5 min',
+    timeMinutes: 5,
+    links: [
+      { label: 'LinkedIn Jobs', url: 'https://www.linkedin.com/jobs/' },
+    ],
+  },
+  {
+    key: 'send_application',
+    label: 'Send 1 application or follow-up',
+    timeEstimate: '15 min',
+    timeMinutes: 15,
+  },
+  {
+    key: 'social_engage',
+    label: 'Post or engage with 3 industry posts',
+    timeEstimate: '10 min',
+    timeMinutes: 10,
+  },
+  {
+    key: 'portfolio_work',
+    label: 'Work on portfolio / MAKINA',
+    timeEstimate: 'rest',
+    timeMinutes: 0,
+  },
+]

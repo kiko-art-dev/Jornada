@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useJobHuntStore } from '../stores/jobHuntStore'
 import { JobHuntBoard } from '../components/job-hunt/JobHuntBoard'
 import { JobHuntStats } from '../components/job-hunt/JobHuntStats'
+import { DailyRoutinePanel } from '../components/job-hunt/DailyRoutinePanel'
 import { JobHuntDrawer } from '../components/job-hunt/JobHuntDrawer'
 import { JobHuntImport } from '../components/job-hunt/JobHuntImport'
 import { AddStudioModal } from '../components/job-hunt/AddStudioModal'
@@ -14,6 +15,7 @@ const MARKET_TABS: { value: JobMarket; label: string }[] = [
 
 export function JobHuntPage() {
   const fetchApplications = useJobHuntStore((s) => s.fetchApplications)
+  const fetchRoutine = useJobHuntStore((s) => s.fetchRoutine)
   const loading = useJobHuntStore((s) => s.loading)
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null)
   const [market, setMarket] = useState<JobMarket>('poland')
@@ -23,7 +25,8 @@ export function JobHuntPage() {
 
   useEffect(() => {
     fetchApplications()
-  }, [fetchApplications])
+    fetchRoutine()
+  }, [fetchApplications, fetchRoutine])
 
   return (
     <div className="flex h-full flex-col">
@@ -97,8 +100,9 @@ export function JobHuntPage() {
           </div>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-1">
           <JobHuntStats market={market} />
+          <DailyRoutinePanel />
         </div>
       </div>
 

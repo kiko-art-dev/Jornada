@@ -1,12 +1,24 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabase'
 import { useToastStore } from './toastStore'
+import { DAILY_ROUTINE_STEPS } from '../lib/jobHunt'
 import type { JobApplication, JobTimelineEntry, JobStage } from '../types'
+
+interface RoutineDay {
+  date: string
+  completed: number
+  total: number
+}
 
 interface JobHuntState {
   applications: JobApplication[]
   timeline: JobTimelineEntry[]
   loading: boolean
+
+  // Routine
+  routineLogs: Record<string, boolean>
+  routineHistory: RoutineDay[]
+  routineLoading: boolean
 
   fetchApplications: () => Promise<void>
   fetchTimeline: (appId: string) => Promise<void>
@@ -20,12 +32,24 @@ interface JobHuntState {
 
   getByStage: (stage: JobStage) => JobApplication[]
   getAppTimeline: (appId: string) => JobTimelineEntry[]
+
+  // Routine actions
+  fetchRoutine: () => Promise<void>
+  toggleRoutineStep: (stepKey: string) => Promise<void>
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
 }
 
 export const useJobHuntStore = create<JobHuntState>((set, get) => ({
   applications: [],
   timeline: [],
   loading: false,
+
+  routineLogs: {},
+  routineHistory: [],
+  routineLoading: false,
 
   fetchApplications: async () => {
     set({ loading: true })
@@ -186,5 +210,90 @@ export const useJobHuntStore = create<JobHuntState>((set, get) => ({
     return get()
       .timeline.filter((t) => t.application_id === appId)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  },
+
+  // --- Daily Routine ---
+
+  fetchRoutine: async () => {
+    set({ routineLoading: true })
+    const today = todayStr()
+
+    // Fetch today's logs
+    const { data: todayData } = await supabase
+      .from('daily_routine_logs')
+      .select('step_key, completed')
+      .eq('log_date', today)
+
+    const logs: Record<string, boolean> = {}
+    if (todayData) {
+      for (const row of todayData) {
+        logs[row.step_key] = row.completed
+      }
+    }
+
+    // Fetch last 7 days for history
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+    const fromDate = sevenDaysAgo.toISOString().slice(0, 10)
+
+    const { data: histData } = await supabase
+      .from('daily_routine_logs')
+      .select('log_date, completed')
+      .gte('log_date', fromDate)
+      .eq('completed', true)
+
+    const total = DAILY_ROUTINE_STEPS.length
+    const dayCounts: Record<string, number> = {}
+    if (histData) {
+      for (const row of histData) {
+        dayCounts[row.log_date] = (dayCounts[row.log_date] || 0) + 1
+      }
+    }
+
+    const history: RoutineDay[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const ds = d.toISOString().slice(0, 10)
+      history.push({ date: ds, completed: dayCounts[ds] || 0, total })
+    }
+
+    set({ routineLogs: logs, routineHistory: history, routineLoading: false })
+  },
+
+  toggleRoutineStep: async (stepKey) => {
+    const today = todayStr()
+    const current = get().routineLogs[stepKey] || false
+    const newVal = !current
+
+    // Optimistic update
+    set((s) => ({
+      routineLogs: { ...s.routineLogs, [stepKey]: newVal },
+      routineHistory: s.routineHistory.map((d) =>
+        d.date === today
+          ? { ...d, completed: d.completed + (newVal ? 1 : -1) }
+          : d
+      ),
+    }))
+
+    // Check if all done → toast
+    const logs = get().routineLogs
+    const allDone = DAILY_ROUTINE_STEPS.every((s) => logs[s.key])
+    if (allDone) {
+      useToastStore.getState().addToast('Daily routine complete! Nice work.', { type: 'success' })
+    }
+
+    // Upsert to Supabase
+    await supabase
+      .from('daily_routine_logs')
+      .upsert(
+        {
+          log_date: today,
+          step_key: stepKey,
+          completed: newVal,
+          completed_at: newVal ? new Date().toISOString() : null,
+        },
+        { onConflict: 'log_date,step_key' }
+      )
   },
 }))
